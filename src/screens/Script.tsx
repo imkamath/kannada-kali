@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { C, pal } from '../theme';
 import { SectionLabel, SpeakButton, TopBar } from '../components/ui';
@@ -12,22 +12,16 @@ export default function Script() {
   const { uiLang, profile } = useStore();
   const [sel, setSel] = useState<Letter>(VOWELS[0]);
   const [scrollOn, setScrollOn] = useState(true);
-  const [ink, setInk] = useState(0);
   const [traced, setTraced] = useState<string[]>([]);
-  const pad = useRef<{ clear: () => void } | null>(null);
   const ALL = [...VOWELS, ...CONSONANTS];
-  const goodEnough = ink > 160;
   const showDeva = (profile?.langs ?? []).some((l) => l === 'hi' || l === 'mr') || profile?.direction === 'teach';
   const devaName = profile?.langs.includes('mr') && !profile?.langs.includes('hi') ? 'मराठी' : 'हिंदी / मराठी';
 
   const pick = (l: Letter) => {
     setSel(l);
-    setInk(0);
-    pad.current?.clear();
     say(l.kn, 'kn');
   };
   const nextLetter = () => {
-    if (goodEnough && !traced.includes(sel.kn)) setTraced([...traced, sel.kn]);
     pick(ALL[(ALL.indexOf(sel) + 1) % ALL.length]);
   };
 
@@ -92,31 +86,18 @@ export default function Script() {
           <SpeakButton text={sel.kn} bg={C.magentaTint} fg={C.magenta} />
         </View>
         <TracePad
-          key={sel.kn}
           letter={sel.kn}
-          strokesRef={pad}
-          onStrokeStart={() => setScrollOn(false)}
-          onStrokeEnd={(len) => {
-            setScrollOn(true);
-            setInk(len);
+          onDrawStart={() => setScrollOn(false)}
+          onDrawEnd={() => setScrollOn(true)}
+          onComplete={() => {
+            const k = sel.kn;
+            setTraced((tr) => (tr.includes(k) ? tr : [...tr, k]));
+            say(sel.kn, 'kn');
           }}
         />
-        {goodEnough ? <Text style={styles.praise}>ಚೆನ್ನಾಗಿದೆ! Well done · शाबाश!</Text> : null}
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              pad.current?.clear();
-              setInk(0);
-            }}
-            style={[styles.traceBtn, { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: C.magenta }]}
-          >
-            <Text style={{ color: '#B3165A', fontWeight: '800', fontSize: 15 }}>Clear</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" onPress={nextLetter} style={[styles.traceBtn, { backgroundColor: C.magenta }]}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>Next letter ›</Text>
-          </Pressable>
-        </View>
+        <Pressable accessibilityRole="button" onPress={nextLetter} style={[styles.traceBtn, { backgroundColor: C.magenta, flex: 0 }]}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>Next letter ›</Text>
+        </Pressable>
         <Text style={{ fontSize: 12, color: C.muted, textAlign: 'center' }}>
           {traced.length} / {ALL.length} letters traced
         </Text>
