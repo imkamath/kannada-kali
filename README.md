@@ -73,3 +73,11 @@ src/components/          shared buttons, Celebration popup
 Every push to `main` runs `.github/workflows/build-apk.yml`, which builds the APK on GitHub's servers (about 15–25 minutes) and publishes it under **Releases** as `KannadaKali.apk`. You can also start a build by hand from the **Actions** tab → *Build Android APK* → *Run workflow*.
 
 The APK is signed with a debug key, which is fine for installing and testing on phones. For the Play Store, build with `eas build -p android --profile production` or add your own release keystore.
+
+## Web app and sync
+
+The same app runs in a browser: **https://imkamath.github.io/kannada-kali/** (deployed by `.github/workflows/deploy-web.yml` on every push to `main`).
+
+Progress syncs between the phone app and the web app with a **sync code**: open *Progress → Sync phone and computer → Get a sync code* on one device, then enter the code on the other (on a new device the code box is on the first screen). Streak, XP, finished units, learned words and the learning path then stay in step; each device syncs when it opens, after every lesson and once a minute.
+
+Sync data lives in the Firebase project `kannada-kali-afcf0` (Cloud Firestore, Mumbai). The security rules in `firestore.rules` only allow reading or writing a document if you know its 12-character code, and documents can't be listed. If you change the rules, paste them into Firebase console → Firestore → Rules.

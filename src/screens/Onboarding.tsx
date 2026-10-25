@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { C } from '../theme';
 import { BigButton, SectionLabel } from '../components/ui';
 import { useStore, type Direction } from '../store';
+import { SyncCard } from '../components/SyncCard';
 import type { BaseLang } from '../data/content';
 
 const LANGS: { id: BaseLang; native: string; en: string; glyph: string; color: string; tint: string; ink: string; water: string }[] = [
@@ -12,7 +13,7 @@ const LANGS: { id: BaseLang; native: string; en: string; glyph: string; color: s
 ];
 
 export default function Onboarding() {
-  const { setProfile, profile } = useStore();
+  const { setProfile, profile, changingPath, cancelPathChange } = useStore();
   const [sel, setSel] = useState<BaseLang[]>(profile?.langs ?? ['en']);
   const [dir, setDir] = useState<Direction>(profile?.direction ?? 'learn');
 
@@ -112,8 +113,15 @@ export default function Onboarding() {
         })}
       </View>
 
+      {!profile ? <SyncCard compact /> : null}
+
       <View style={{ flex: 1, minHeight: 16 }} />
-      <BigButton label="Start learning" onPress={() => setProfile({ langs: sel, direction: dir })} />
+      <BigButton label={changingPath ? 'Save' : 'Start learning'} onPress={() => setProfile({ langs: sel, direction: dir })} />
+      {changingPath ? (
+        <Pressable accessibilityRole="button" onPress={cancelPathChange} style={{ alignSelf: 'center', padding: 10 }}>
+          <Text style={{ color: C.violet, fontWeight: '800' }}>Cancel</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { C, pal } from '../theme';
 import { SectionLabel, SpeakButton } from '../components/ui';
 import { useStore, dayKey } from '../store';
 import { UNITS, type Lang } from '../data/content';
 import { t } from '../i18n';
+import { confirmAction, notify } from '../components/dialog';
 
 export default function Home({ onStartLesson, onOpenSpeak }: { onStartLesson: (unitId: string) => void; onOpenSpeak: () => void }) {
   const { progress, uiLang, uiLang2, pathName, resetProfile, promptLangs, targetLangs, label, profile } = useStore();
@@ -35,10 +36,7 @@ export default function Home({ onStartLesson, onOpenSpeak }: { onStartLesson: (u
           accessibilityRole="button"
           accessibilityLabel={t('changePath', uiLang)}
           onPress={() =>
-            Alert.alert(t('changePath', uiLang), pathName, [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'OK', onPress: resetProfile },
-            ])
+            confirmAction(t('changePath', uiLang), pathName, resetProfile)
           }
           style={styles.pathChip}
         >
@@ -88,7 +86,7 @@ export default function Home({ onStartLesson, onOpenSpeak }: { onStartLesson: (u
               key={u.id}
               accessibilityRole="button"
               accessibilityState={{ disabled: !unlocked }}
-              onPress={() => (unlocked ? onStartLesson(u.id) : Alert.alert(t('locked', uiLang)))}
+              onPress={() => (unlocked ? onStartLesson(u.id) : notify(t('locked', uiLang)))}
               style={[styles.unit, isCurrent && { borderColor: C.violet, borderWidth: 2 }]}
             >
               <View style={[styles.unitTile, { backgroundColor: unlocked ? solid : '#F1EEF6' }]}>

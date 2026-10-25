@@ -5,6 +5,7 @@ import { SectionLabel, TopBar } from '../components/ui';
 import { useStore, dayKey } from '../store';
 import { UNITS } from '../data/content';
 import { t } from '../i18n';
+import { SyncCard } from '../components/SyncCard';
 
 export default function Progress() {
   const { progress, uiLang, pathName, resetProfile } = useStore();
@@ -62,6 +63,8 @@ export default function Progress() {
           ))}
         </View>
       </View>
+
+      <SyncCard />
 
       <SectionLabel>{t('badges', uiLang)}</SectionLabel>
       <View style={styles.badges}>

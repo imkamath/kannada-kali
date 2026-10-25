@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // One document per sync code. Only someone who knows the 12-character code can read or write it.
+    match /sync/{code} {
+      allow get: if code.matches('^[A-HJ-NP-Z2-9]{12}$');
+      allow create, update: if code.matches('^[A-HJ-NP-Z2-9]{12}$')
+        && request.resource.data.keys().hasOnly(['data', 'updatedAt'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 200000
+        && request.resource.data.updatedAt is int;
+      allow list, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

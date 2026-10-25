@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StoreProvider, useStore } from './src/store';
@@ -26,7 +26,7 @@ const TABS: { id: Tab; key: Key; glyph: string; color: string; tint: string }[] 
 ];
 
 function Root() {
-  const { ready, profile, uiLang } = useStore();
+  const { ready, profile, uiLang, changingPath } = useStore();
   const [tab, setTab] = useState<Tab>('home');
   const [overlay, setOverlay] = useState<Overlay>(null);
 
@@ -54,7 +54,7 @@ function Root() {
     );
   }
 
-  if (!profile) return <Onboarding />;
+  if (!profile || changingPath) return <Onboarding />;
 
   if (overlay?.kind === 'lesson') return <Lesson unitId={overlay.unitId} onClose={() => setOverlay(null)} />;
   if (overlay?.kind === 'speak') return <Speak onBack={() => setOverlay(null)} />;
@@ -99,9 +99,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StoreProvider>
-        <SafeAreaView style={styles.fill} edges={['top', 'bottom', 'left', 'right']}>
+        <SafeAreaView style={[styles.fill, Platform.OS === 'web' && styles.webOuter]} edges={['top', 'bottom', 'left', 'right']}>
           <StatusBar style="dark" />
-          <Root />
+          <View style={[styles.fill, Platform.OS === 'web' && styles.webColumn]}>
+            <Root />
+          </View>
         </SafeAreaView>
       </StoreProvider>
     </SafeAreaProvider>
@@ -110,6 +112,9 @@ export default function App() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: C.bg },
+  // On a computer, show the app as a centred column instead of stretching across the screen.
+  webOuter: { backgroundColor: '#F1E7FB', alignItems: 'center' },
+  webColumn: { width: '100%', maxWidth: 560, borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#E4DAF5' },
   tabbar: { flexDirection: 'row', backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, paddingBottom: 8 },
   tabItem: { flex: 1, alignItems: 'center', gap: 2, minHeight: 52, justifyContent: 'center' },
   tabIcon: { width: 48, height: 30, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
