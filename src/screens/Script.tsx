@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { C, pal } from '../theme';
-import { SectionLabel, TopBar } from '../components/ui';
+import { SectionLabel, SpeakButton, TopBar } from '../components/ui';
+import TracePad from '../components/TracePad';
 import { useStore } from '../store';
 import { CONSONANTS, VOWELS, type Letter } from '../data/content';
 import { t } from '../i18n';
@@ -9,13 +10,25 @@ import { say } from '../speech';
 
 export default function Script() {
   const { uiLang, profile } = useStore();
-  const [sel, setSel] = useState<Letter>(CONSONANTS[0]);
+  const [sel, setSel] = useState<Letter>(VOWELS[0]);
+  const [scrollOn, setScrollOn] = useState(true);
+  const [ink, setInk] = useState(0);
+  const [traced, setTraced] = useState<string[]>([]);
+  const pad = useRef<{ clear: () => void } | null>(null);
+  const ALL = [...VOWELS, ...CONSONANTS];
+  const goodEnough = ink > 160;
   const showDeva = (profile?.langs ?? []).some((l) => l === 'hi' || l === 'mr') || profile?.direction === 'teach';
   const devaName = profile?.langs.includes('mr') && !profile?.langs.includes('hi') ? 'मराठी' : 'हिंदी / मराठी';
 
   const pick = (l: Letter) => {
     setSel(l);
+    setInk(0);
+    pad.current?.clear();
     say(l.kn, 'kn');
+  };
+  const nextLetter = () => {
+    if (goodEnough && !traced.includes(sel.kn)) setTraced([...traced, sel.kn]);
+    pick(ALL[(ALL.indexOf(sel) + 1) % ALL.length]);
   };
 
   const Grid = ({ letters, offset }: { letters: Letter[]; offset: number }) => (
@@ -32,7 +45,10 @@ export default function Script() {
             style={[styles.cell, { backgroundColor: on ? solid : tint }]}
           >
             <Text style={{ fontSize: 22, fontWeight: '800', color: on ? onSolid : C.ink }}>{l.kn}</Text>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: on ? onSolid : C.muted }}>{l.roman}</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: on ? onSolid : C.muted }}>
+              {traced.includes(l.kn) ? '✓ ' : ''}
+              {l.roman}
+            </Text>
           </Pressable>
         );
       })}
@@ -40,7 +56,7 @@ export default function Script() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.wrap}>
+    <ScrollView contentContainerStyle={styles.wrap} scrollEnabled={scrollOn}>
       <TopBar title={`${t('script', uiLang)} · ಲಿಪಿ`} subtitle={t('tapToHear', uiLang)} />
 
       <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -68,6 +84,44 @@ export default function Script() {
         </View>
       ) : null}
 
+      <View style={styles.traceCard}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: C.ink }}>
+            Trace · ಬರೆಯಿರಿ <Text style={{ color: C.magenta }}>{sel.kn}</Text>
+          </Text>
+          <SpeakButton text={sel.kn} bg={C.magentaTint} fg={C.magenta} />
+        </View>
+        <TracePad
+          key={sel.kn}
+          letter={sel.kn}
+          strokesRef={pad}
+          onStrokeStart={() => setScrollOn(false)}
+          onStrokeEnd={(len) => {
+            setScrollOn(true);
+            setInk(len);
+          }}
+        />
+        {goodEnough ? <Text style={styles.praise}>ಚೆನ್ನಾಗಿದೆ! Well done · शाबाश!</Text> : null}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              pad.current?.clear();
+              setInk(0);
+            }}
+            style={[styles.traceBtn, { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: C.magenta }]}
+          >
+            <Text style={{ color: '#B3165A', fontWeight: '800', fontSize: 15 }}>Clear</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={nextLetter} style={[styles.traceBtn, { backgroundColor: C.magenta }]}>
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>Next letter ›</Text>
+          </Pressable>
+        </View>
+        <Text style={{ fontSize: 12, color: C.muted, textAlign: 'center' }}>
+          {traced.length} / {ALL.length} letters traced
+        </Text>
+      </View>
+
       <SectionLabel>{t('vowels', uiLang)} · ಸ್ವರಗಳು</SectionLabel>
       <Grid letters={VOWELS} offset={0} />
 
@@ -91,5 +145,8 @@ const styles = StyleSheet.create({
   note: { backgroundColor: C.marigoldTint, borderRadius: 14, padding: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   cell: { width: '13.3%', aspectRatio: 0.9, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  traceCard: { backgroundColor: C.card, borderRadius: 22, padding: 14, gap: 12 },
+  traceBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  praise: { textAlign: 'center', fontSize: 18, fontWeight: '800', color: C.greenDark },
   tip: { backgroundColor: C.tealDark, borderRadius: 18, padding: 14, gap: 4 },
 });
